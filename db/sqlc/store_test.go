@@ -17,7 +17,7 @@ func TestTranferTx(t *testing.T) {
 	fmt.Println(">> Before : ", account1.Balance, account2.Balance)
 
 	// num of threads
-	n := 3
+	n := 5
 	amount := int64(10)
 
 	// chanels to communicate errors and resutls between go sub routines and main go routine
@@ -25,10 +25,8 @@ func TestTranferTx(t *testing.T) {
 	reslts := make(chan TransferTxResult)
 
 	for i := 0; i < n; i++ {
-		txName := fmt.Sprintf("tx %d", i+1)
-
 		go func() {
-			ctx := context.WithValue(context.Background(), txKey, txName)
+			ctx := context.Background()
 			results, err := store.TransferTx(ctx, TransferTxParams{
 				FromAccountId: account1.ID,
 				ToAccountId:   account2.ID,
@@ -105,4 +103,53 @@ func TestTranferTx(t *testing.T) {
 
 	require.Equal(t, account1.Balance-int64(n)*amount, updatedFromAccount.Balance)
 	require.Equal(t, account2.Balance+int64(n)*amount, updatedToAccount.Balance)
+}
+
+func TestTrasferTxDeadlock(t *testing.T) {
+
+	store := NewStore(testDB)
+
+	account1 := CreateRandomAccount(t)
+	account2 := CreateRandomAccount(t)
+
+	n := 10
+	amount := int64(10)
+
+	errs := make(chan error)
+	for i := 0; i < n; i++ {
+
+		fromAccountID := account1.ID
+		toAccountID := account2.ID
+
+		if i%2 == 1 {
+			fromAccountID = account2.ID
+			toAccountID = account1.ID
+		}
+
+		go func() {
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
+				FromAccountId: fromAccountID,
+				ToAccountId:   toAccountID,
+				Amount:        amount,
+			})
+			errs <- err
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+	}
+
+	updatedAccount1, err := store.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedAccount1)
+
+	updatedAccount2, err := store.GetAccount(context.Background(), account2.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedAccount2)
+
+	// check if balance stayed the same !
+	require.Equal(t, account1.Balance, updatedAccount1.Balance)
+	require.Equal(t, account2.Balance, updatedAccount2.Balance)
 }
