@@ -5,8 +5,13 @@ HOST = localhost
 PORT = 5432
 DB = simplebank
 
+DB_CONTAINER = postgres12
+
+db:
+	docker start $(DB_CONTAINER)
+
 postgres:
-	docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=root -d postgres:12-alpine
+	docker run --name $(DB_CONTAINER) -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=root -d postgres:12-alpine
 
 createdb:
 	docker exec -it postgres12 createdb --username=root --owner=root simplebank
@@ -23,4 +28,4 @@ migratedown:
 sqlc:
 	sqlc generate
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc 
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc db 
