@@ -7,6 +7,7 @@ import (
 	"github.com/brkss/simplebank/api"
 	db "github.com/brkss/simplebank/db/sqlc"
 	"github.com/brkss/simplebank/utils"
+	_ "github.com/golang/mock/mockgen/model"
 	_ "github.com/lib/pq"
 )
 
