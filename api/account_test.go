@@ -240,5 +240,76 @@ func checkListAccountResponse(t *testing.T, body *bytes.Buffer, accounts []db.Ac
 	for i := 0; i < len(accounts); i++ {
 		require.Equal(t, accounts[i], gotAccounts[i])
 	}
+}
+
+/*
+func TestCreateAccount(t *testing.T) {
+
+		arg := CreateAccountRequest{
+			Owner:    utils.RandomOwner(),
+			Currency: utils.RandomCurrency(),
+		}
+		testCases := []struct {
+			name          string
+			arg           CreateAccountRequest
+			buildStabs    func(store *mockdb.MockStore)
+			checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		}{
+			{
+				name: "OK",
+				arg:  arg,
+				buildStabs: func(store *mockdb.MockStore) {
+					store.EXPECT().
+						CreateAccount(gomock.Any(), gomock.Eq(arg)).
+						Times(1).
+						Return(db.Account{
+							ID:       utils.RandomInt(0, 1000),
+							Owner:    arg.Owner,
+							Currency: arg.Currency,
+							Balance:  0,
+						}, nil)
+
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, recorder.Code, http.StatusOK)
+					checkCreateAccountResponse(t, recorder.Body, arg)
+				},
+			},
+		}
+
+
+			for i := range testCases {
+				tc := testCases[i]
+				t.Run(tc.name, func(t *testing.T) {
+
+					ctrl := gomock.NewController(t)
+
+					store := mockdb.NewMockStore(ctrl)
+					tc.buildStabs(store)
+
+					recorder := httptest.NewRecorder()
+					server := NewServer(store)
+
+					url := "/account"
+					body := bytes.NewReader(arg)
+					request, err := http.NewRequest(http.MethodPost, url, body)
+					require.NoError(t, err)
+					server.router.ServeHTTP(recorder, request)
+				})
+			}
+	}
+*/
+func checkCreateAccountResponse(t *testing.T, body *bytes.Buffer, arg CreateAccountRequest) {
+
+	data, err := ioutil.ReadAll(body)
+	require.NoError(t, err)
+
+	var account db.Account
+	err = json.Unmarshal(data, &account)
+	require.NoError(t, err)
+
+	require.Equal(t, account.Balance, 0)
+	require.Equal(t, account.Owner, arg.Owner)
+	require.Equal(t, account.Currency, arg.Currency)
 
 }
