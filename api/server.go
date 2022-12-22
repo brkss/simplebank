@@ -1,21 +1,36 @@
 package api
 
 import (
+	"github.com/brkss/simplebank/token"
+	"github.com/brkss/simplebank/utils"
+
+	"fmt"
+
 	db "github.com/brkss/simplebank/db/sqlc"
 	"github.com/gin-gonic/gin"
 )
 
 // Server serve HTTP request for our banking service
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	store      db.Store
+	router     *gin.Engine
+	tokenMaker token.Maker
+	config     utils.Config
 }
 
 // NewServer creaet new HTTP server and setup routes
-func NewServer(store db.Store) *Server {
-	server := &Server{
-		store: store,
+func NewServer(config utils.Config, store db.Store) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %v", err)
 	}
+
+	server := &Server{
+		store:      store,
+		tokenMaker: tokenMaker,
+		config:     config,
+	}
+
 	router := gin.Default()
 
 	router.POST("/accounts", server.createAccount)
@@ -23,11 +38,12 @@ func NewServer(store db.Store) *Server {
 	router.GET("/accounts/:limit/:offset", server.listAccounts)
 
 	router.POST("/users", server.createUser)
+	router.POST("/login", server.LoginUser)
 
 	router.POST("/transfers", server.createTransfer)
 
 	server.router = router
-	return server
+	return server, nil
 }
 
 // Start new HTTP request and listen for requests !

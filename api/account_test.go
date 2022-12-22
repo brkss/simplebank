@@ -90,7 +90,7 @@ func TestGetAccount(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send requests
-			server := NewServer(store)
+			server := NewTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/account/%d", tc.accountID)
@@ -197,7 +197,7 @@ func TestListAccounts(t *testing.T) {
 			tc.buildStubs(store)
 
 			recorder := httptest.NewRecorder()
-			server := NewServer(store)
+			server := NewTestServer(t, store)
 
 			url := fmt.Sprintf("/accounts/%d/%d", tc.limit, tc.offset)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
