@@ -31,6 +31,11 @@ func NewServer(config utils.Config, store db.Store) (*Server, error) {
 		config:     config,
 	}
 
+	server.SetupRouter()
+	return server, nil
+}
+
+func (server *Server) SetupRouter() {
 	router := gin.Default()
 
 	router.POST("/accounts", server.createAccount)
@@ -41,9 +46,14 @@ func NewServer(config utils.Config, store db.Store) (*Server, error) {
 	router.POST("/login", server.LoginUser)
 
 	router.POST("/transfers", server.createTransfer)
+	/*
+		router.GET("/auth", authMiddleware(server.tokenMaker), func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, gin.H{})
+			return
+		})
+	*/
 
 	server.router = router
-	return server, nil
 }
 
 // Start new HTTP request and listen for requests !
