@@ -2,16 +2,17 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
-	pq "github.com/lib/pq"
-  db "github.com/brkss/simplebank/db/sqlc"
+	db "github.com/brkss/simplebank/db/sqlc"
+	"github.com/brkss/simplebank/token"
 	"github.com/gin-gonic/gin"
-  
+	pq "github.com/lib/pq"
 )
 
 type CreateAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
+	//Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,oneof=USD EUR"`
 }
 
@@ -33,22 +34,23 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  int64(0),
 	}
 	account, err := server.store.CreateAccount(ctx, arg)
 	if err != nil {
-    pqErr, ok := err.(*pq.Error);
+		pqErr, ok := err.(*pq.Error)
 		if ok {
-      switch pqErr.Code.Name() {
-      case "foreign_key_violation", "unique_violation":
-          ctx.JSON(http.StatusForbidden, errorResponse(err))
-          return
-      }
-    }
-    ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			switch pqErr.Code.Name() {
+			case "foreign_key_violation", "unique_violation":
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
+			}
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -74,6 +76,13 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.Username != account.Owner {
+		err = fmt.Errorf("this account doesn't belong to the current user !")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -84,9 +93,11 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPaylaod := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.ListAccountsParams{
 		Limit:  req.Limit,
 		Offset: req.Offset,
+		Owner:  authPaylaod.Username,
 	}
 	accounts, err := server.store.ListAccounts(ctx, arg)
 	if err != nil {

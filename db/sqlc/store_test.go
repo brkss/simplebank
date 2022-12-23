@@ -10,9 +10,10 @@ import (
 
 func TestTranferTx(t *testing.T) {
 	store := NewStore(testDB)
-
-	account1 := CreateRandomAccount(t)
-	account2 := CreateRandomAccount(t)
+	user1 := createRandomUser(t)
+	user2 := createRandomUser(t)
+	account1 := CreateRandomAccount(t, user1)
+	account2 := CreateRandomAccount(t, user2)
 
 	fmt.Println(">> Before : ", account1.Balance, account2.Balance)
 
@@ -109,8 +110,10 @@ func TestTrasferTxDeadlock(t *testing.T) {
 
 	store := NewStore(testDB)
 
-	account1 := CreateRandomAccount(t)
-	account2 := CreateRandomAccount(t)
+	user1 := createRandomUser(t)
+	user2 := createRandomUser(t)
+	account1 := CreateRandomAccount(t, user1)
+	account2 := CreateRandomAccount(t, user2)
 
 	n := 10
 	amount := int64(10)

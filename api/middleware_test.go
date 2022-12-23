@@ -47,8 +47,7 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "UnsetToken",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				authorization := fmt.Sprintf("%s %s", authorizationTypeBearer, "")
-				request.Header.Set(authorizationHeaderKey, authorization)
+
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, recorder.Code, http.StatusUnauthorized)
